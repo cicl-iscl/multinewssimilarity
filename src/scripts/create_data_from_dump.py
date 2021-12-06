@@ -4,7 +4,7 @@ import jsonlines
 from pathlib import Path
 from src.logger import log
 from src.data import CSVReader, JSONReader, News
-from src.config import DUMP_PATH, RAW_TRAIN_FILE, TRAIN_PATH, FINAL_TRAIN_FILE
+from src.config import DUMP_PATH, RAW_TRAIN_FILE, UNCLEANED_PATH, TRAIN_FILE
 from tqdm import tqdm
 
 FIELD_TO_INDEX_MAP = {'url1_lang': 0, 'url2_lang': 1, 'pair_id': 2, 'Geography': 7,
@@ -24,10 +24,10 @@ def id_to_json_path(pair_id):
 
 
 if __name__ == "__main__":
-    if not (Path(TRAIN_PATH).exists() and Path(TRAIN_PATH+RAW_TRAIN_FILE).exists()):
-        raise FileNotFoundError(f"Training data does not exist at: {TRAIN_PATH}")
-    csv_reader = CSVReader(TRAIN_PATH+RAW_TRAIN_FILE)
-    writer = jsonlines.Writer(open(TRAIN_PATH+FINAL_TRAIN_FILE, 'w'))
+    if not (Path(UNCLEANED_PATH).exists() and Path(UNCLEANED_PATH+RAW_TRAIN_FILE).exists()):
+        raise FileNotFoundError(f"Training data does not exist at: {UNCLEANED_PATH}")
+    csv_reader = CSVReader(UNCLEANED_PATH+RAW_TRAIN_FILE)
+    writer = jsonlines.Writer(open(UNCLEANED_PATH+TRAIN_FILE, 'w'))
     empty_pairs = []
     t, processed = tqdm(total=csv_reader.df.shape[0]), 0
 
