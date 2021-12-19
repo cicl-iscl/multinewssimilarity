@@ -18,3 +18,15 @@ TEST_FILE = 'test.jsonl'
 EMBEDDING_MODEL = 'setu4993/LaBSE'
 EMBEDDING_MODEL_TYPE = 'LaBSE'
 EMBEDDING_DATA_PATH = "/home/monk/Projects/UT/multinewssimilarity/data/EStore/"
+
+
+WANDB_INIT_PARAMS = {
+    "project": "SemEval-Task-8",
+    "entity": "notsomonk",
+}
+
+WANDB_MODEL_CONFIG = {
+    "learning_rate": 5e-5,
+    "epochs": 100,
+    "batch_size": 128
+}
