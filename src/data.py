@@ -9,8 +9,8 @@ from numpy import save as n_save, load as n_load
 from pandas import read_csv
 from typing import Type, Union
 
-from src.config import ALLOWED_FILE_TYPES
-from src.logger import log
+from config import ALLOWED_FILE_TYPES
+from logger import log
 
 
 @dataclass

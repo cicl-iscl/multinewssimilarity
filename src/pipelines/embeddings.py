@@ -8,9 +8,8 @@ from pathlib import Path
 from sentence_transformers import SentenceTransformer, util
 from spacy import load
 from tqdm import tqdm
-
-from src.config import EMBEDDING_MODEL, EMBEDDING_MODEL_TYPE, EMBEDDING_DATA_PATH, TRAIN_FILE, CLEANED_PATH
-from src.data import JSONLinesReader, EmbeddingStore
+from config import EMBEDDING_MODEL, EMBEDDING_MODEL_TYPE, EMBEDDING_DATA_PATH, TRAIN_FILE, CLEANED_PATH
+from data import JSONLinesReader, EmbeddingStore
 
 nlp = load('xx_ent_wiki_sm')
 nlp.add_pipe('sentencizer')

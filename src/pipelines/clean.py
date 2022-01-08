@@ -10,9 +10,9 @@ Functionalities:
 import jsonlines
 import re
 
-from src.config import TRAIN_FILE, UNCLEANED_PATH, CLEANED_PATH
-from src.data import JSONLinesReader
-from src.logger import log
+from config import TRAIN_FILE, UNCLEANED_PATH, CLEANED_PATH
+from data import JSONLinesReader
+from logger import log
 
 COPYRIGHT_PATTERN = re.compile(r"(\.\s|\n)Copyright[^$]*")
 
