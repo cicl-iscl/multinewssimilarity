@@ -16,7 +16,7 @@ data_dump/
 *.tsv
 *.pdf
 EStore/
-early.csv
+text_LaBSE.csv
 
 # C extensions
 *.so
