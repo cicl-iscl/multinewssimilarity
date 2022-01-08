@@ -36,7 +36,7 @@ def remove_copyright(text):
 if __name__ == "__main__":
 
     reader = JSONLinesReader(UNCLEANED_PATH+TRAIN_FILE)
-    writer = jsonlines.Writer(open(CLEANED_PATH+TRAIN_FILE, 'w'))
+    writer = jsonlines.Writer(open(CLEANED_PATH+TRAIN_FILE, 'w', encoding="utf8"))
 
     for p_id, n1_data, n2_data, scores in reader.get_news_data():
         len_1, len_2 = len(re.split('.|\n', n1_data.text)), len(re.split('.|\n', n2_data.text))

@@ -55,7 +55,7 @@ class Reader:
         self._check_args(path)
 
     def _check_args(self, *args):
-        if args[0].split('.')[1] not in ALLOWED_FILE_TYPES:
+        if args[0].split('.')[-1] not in ALLOWED_FILE_TYPES:
             raise NotImplementedError('{} filetype is not supported.'.format(args[0].split('.')[1]))
         if not pathlib.Path(args[0]).exists():
             raise FileNotFoundError(f'{self.path} does not exist.')
@@ -108,7 +108,7 @@ class JSONLinesReader(Reader):
             log.error(f'Data does not exist for this pair: {path}')
             self._fobj = None
         else:
-            self._fobj = open(self.path, 'r')
+            self._fobj = open(self.path, 'r', encoding='utf8')
             self.reader = jsonlines.Reader(self._fobj)
 
     def get_news_data(self):

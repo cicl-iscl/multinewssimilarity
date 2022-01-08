@@ -11,7 +11,6 @@ from contextualized_topic_models.models.ctm import CombinedTM
 from contextualized_topic_models.utils.data_preparation import TopicModelDataPreparation
 import nltk
 from nltk.corpus import stopwords
-nltk.download('stopwords')
 from nltk.tokenize import word_tokenize
 
 def document_creation(text, lang):
