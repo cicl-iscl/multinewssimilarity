@@ -1,29 +1,69 @@
 """All kinds of config."""
 
+from enum import Enum
 
-model_config = {}
+
+class EmbeddingType(Enum):
+    all = 'all'
+    title = 'title'
+    start_para = 'start_para'
+    end_para = 'end_para'
+    sentences = 'sentences'
+    topics = 'topics'
+    summary = 'summary'
+
+    def __str__(self):
+        return self.name
+
+    @staticmethod
+    def from_string(s):
+        try:
+            return EmbeddingType[s]
+        except KeyError:
+            raise ValueError()
+
+
+class EmbeddingModels(Enum):
+    labse = 'setu4993/LaBSE'
+    pmpnet = 'paraphrase-multilingual-mpnet-base-v2'
+
+    def __str__(self):
+        return self.name
+
+    @staticmethod
+    def from_string(s):
+        try:
+            return EmbeddingModels[s]
+        except KeyError:
+            raise ValueError()
+
+
+class DataType(Enum):
+    train = 'train'
+    test = 'test'
+
+    def __str__(self):
+        return self.name
+
+    @staticmethod
+    def from_string(s):
+        try:
+            return DataType[s]
+        except KeyError:
+            raise ValueError()
+
 
 ALLOWED_FILE_TYPES = ['json', 'csv', 'jsonl']
+REQUIRED_SCORES = ["geography", "entities", "time", "narrative", "overall"]
+model_config = {}
 
-DUMP_PATH = '/home/monk/Projects/UT/multinewssimilarity/data_dump/'
-CLEANED_PATH = '/home/monk/Projects/UT/multinewssimilarity/data/'
-UNCLEANED_PATH = '/home/monk/Projects/UT/multinewssimilarity/uncleaned_data/'
+DUMP_PATH = 'data_dump/{data_type}/'
+CLEANED_PATH = 'data/{data_type}/'
+UNCLEANED_PATH = 'uncleaned_data/{data_type}/'
+STORE_PATH = 'data/EStore/{data_type}/{embedding_model}/{embedding_entity}'
 
-RAW_TRAIN_FILE = 'train_data.csv'
-TRAIN_FILE = 'train.jsonl'
-
-RAW_TEST_FILE = 'test_data.csv'
-TEST_FILE = 'test.jsonl'
-
-
-EMBEDDING_MODEL = 'paraphrase-multilingual-mpnet-base-v2'
-EMBEDDING_MODEL_TYPE = 'pMPNet'
-
-EMBEDDING_ENTITY = 'title'
-# EMBEDDING_ENTITY = 'text'
-# EMBEDDING_MODEL = 'setu4993/LaBSE'
-# EMBEDDING_MODEL_TYPE = 'LaBSE'
-EMBEDDING_DATA_PATH = f"/home/monk/Projects/UT/multinewssimilarity/data/EStore/{EMBEDDING_MODEL_TYPE}/{EMBEDDING_ENTITY}"
+RAW_FILE = '{data_type}_data.csv'
+DATA_FILE = '{data_type}.jsonl'
 
 
 class WandbParams:
@@ -38,4 +78,4 @@ class WandbParams:
     }
 
 
-SCORE_CSV = '{}_{}.csv'.format(EMBEDDING_ENTITY, EMBEDDING_MODEL_TYPE)
+# SCORE_CSV = '{}_{}.csv'.format(EMBEDDING_ENTITY, EMBEDDING_MODEL_TYPE)

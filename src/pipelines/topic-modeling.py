@@ -1,17 +1,18 @@
 """
 Pipeline for topic classification
 """
-from config import TRAIN_FILE, CLEANED_PATH, EMBEDDING_DATA_PATH, EMBEDDING_MODEL_TYPE
-from data import JSONLinesReader, EmbeddingStore
-from sklearn.feature_extraction.text import CountVectorizer
-from tqdm import tqdm
 import pycountry
-
 from contextualized_topic_models.models.ctm import CombinedTM
 from contextualized_topic_models.utils.data_preparation import TopicModelDataPreparation
-import nltk
+
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
+from sklearn.feature_extraction.text import CountVectorizer
+from tqdm import tqdm
+
+from src.config import TRAIN_FILE, CLEANED_PATH, EMBEDDING_DATA_PATH, EMBEDDING_MODEL_TYPE
+from src.data import JSONLinesReader, EmbeddingStore
+
 
 def document_creation(text, lang):
     if lang in documents:
@@ -19,6 +20,7 @@ def document_creation(text, lang):
         documents[lang] = values
     else:
         documents[lang] = text
+
 
 def document_cleaning(docs, lang):
     if lang in stopwords.fileids():
@@ -29,6 +31,7 @@ def document_cleaning(docs, lang):
 
     return docs
 
+
 def data_preparation(text_for_bow, text_for_contextual):
     vectorizer = CountVectorizer()  # from sklearn
 
@@ -38,6 +41,7 @@ def data_preparation(text_for_bow, text_for_contextual):
 
     return train_bow_embeddings, vocab, id2token
 
+
 def topic_modeling(contextualized_embeddings, bow_embeddings, vocab, id2token):
     qt = TopicModelDataPreparation()
 
@@ -45,6 +49,7 @@ def topic_modeling(contextualized_embeddings, bow_embeddings, vocab, id2token):
     ctm = CombinedTM(bow_size=len(vocab), contextual_size=len(contextualized_embeddings), n_components=5)
     ctm.fit(training_dataset)  # run the model
     ctm.get_topics()
+
 
 if __name__ == "__main__":
     reader = JSONLinesReader(CLEANED_PATH + TRAIN_FILE)

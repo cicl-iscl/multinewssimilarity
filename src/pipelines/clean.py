@@ -6,23 +6,31 @@ Functionalities:
     2. Remove copyright text
 """
 
-
+import argparse
 import jsonlines
 import re
 
-from config import TRAIN_FILE, UNCLEANED_PATH, CLEANED_PATH
-from data import JSONLinesReader
-from logger import log
+from pathlib import Path
+from tqdm import tqdm
+
+from src.config import DATA_FILE, UNCLEANED_PATH, CLEANED_PATH, DataType, RAW_FILE
+from src.data import JSONLinesReader
+from src.logger import log
 
 COPYRIGHT_PATTERN = re.compile(r"(\.\s|\n)Copyright[^$]*")
 
 
 def write_to_jsonl(w, pair_id, n1, n2, s):
-    d_row = {'pair_id': pair_id,
-             'n1_data': n1.__dict__,
-             'n2_data': n2.__dict__,
-             'scores': s.__dict__
-             }
+    if s:
+        d_row = {'pair_id': pair_id,
+                 'n1_data': n1.__dict__,
+                 'n2_data': n2.__dict__,
+                 'scores': s.__dict__
+                 }
+    else:
+        d_row = {'pair_id': pair_id,
+                 'n1_data': n1.__dict__,
+                 'n2_data': n2.__dict__}
     w.write(d_row)
 
 
@@ -35,10 +43,23 @@ def remove_copyright(text):
 
 if __name__ == "__main__":
 
-    reader = JSONLinesReader(UNCLEANED_PATH+TRAIN_FILE)
-    writer = jsonlines.Writer(open(CLEANED_PATH+TRAIN_FILE, 'w', encoding="utf8"))
+    parser = argparse.ArgumentParser(description='Create single file from the scraped data dump.')
+    parser.add_argument('-d', '--data_type', type=DataType.from_string, choices=list(DataType), required=True,
+                        help='Train or Test data type')
+    args = parser.parse_args()
+    IP_FILE = RAW_FILE.format(data_type=args.data_type)
+    OP_FILE = DATA_FILE.format(data_type=args.data_type)
 
-    for p_id, n1_data, n2_data, scores in reader.get_news_data():
+    CLEANED_PATH = CLEANED_PATH.format(data_type=args.data_type)
+    UNCLEANED_PATH = UNCLEANED_PATH.format(data_type=args.data_type)
+
+    if not Path(CLEANED_PATH).exists():
+        Path(CLEANED_PATH).mkdir()
+
+    reader = JSONLinesReader(UNCLEANED_PATH+IP_FILE)
+    writer = jsonlines.Writer(open(CLEANED_PATH+OP_FILE, 'w', encoding="utf8"))
+
+    for p_id, n1_data, n2_data, scores in tqdm(reader.get_news_data()):
         len_1, len_2 = len(re.split('.|\n', n1_data.text)), len(re.split('.|\n', n2_data.text))
         if len_1 <= 1 or len_2 <= 1:
             log.error(f"pair {p_id} doesn't have enough news content.")

@@ -9,8 +9,8 @@ from numpy import save as n_save, load as n_load
 from pandas import read_csv
 from typing import Type, Union
 
-from config import ALLOWED_FILE_TYPES
-from logger import log
+from src.config import ALLOWED_FILE_TYPES
+from src.logger import log
 
 
 @dataclass
@@ -116,8 +116,9 @@ class JSONLinesReader(Reader):
             p_id = row['pair_id']
             n1_data = News(**row['n1_data'])
             n2_data = News(**row['n2_data'])
-            scores = Scores(**row['scores'])
+            scores = Scores(**row['scores']) if 'scores' in row else None
             yield p_id, n1_data, n2_data, scores
+            # return p_id, n1_data, n2_data, scores
 
     def __del__(self):
         if self._fobj:
@@ -135,7 +136,6 @@ class EmbeddingStore(object):
         log.info("Storing News Embeddings for {} of len: {}".format(news_id, len(data)))
         news_id = str(news_id)
         group_name = news_id[-2:]
-        print(group_name)
         group_path = pathlib.Path.joinpath(self.path, group_name)
         if not group_path.exists():
             log.info("News Group {} doesn't exist. Creating News group {}".format(group_name, group_name))
