@@ -1,17 +1,19 @@
 """
 Pipeline for topic classification
 """
-import pycountry
-from contextualized_topic_models.models.ctm import CombinedTM
-from contextualized_topic_models.utils.data_preparation import TopicModelDataPreparation
+from contextualized_topic_models.models import ctm
+from contextualized_topic_models.utils.preprocessing import WhiteSpacePreprocessing, WhiteSpacePreprocessingStopwords
 
-from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize
+from config import TRAIN_FILE, CLEANED_PATH, EMBEDDING_DATA_PATH, EMBEDDING_MODEL_TYPE
+from data import JSONLinesReader, EmbeddingStore
 from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.model_selection import train_test_split
 from tqdm import tqdm
+import pycountry
 
-from src.config import TRAIN_FILE, CLEANED_PATH, EMBEDDING_DATA_PATH, EMBEDDING_MODEL_TYPE
-from src.data import JSONLinesReader, EmbeddingStore
+from contextualized_topic_models.models.ctm import ZeroShotTM
+from contextualized_topic_models.utils.data_preparation import TopicModelDataPreparation
+from nltk.corpus import stopwords
 
 
 def document_creation(text, lang):
@@ -24,15 +26,12 @@ def document_creation(text, lang):
 
 def document_cleaning(docs, lang):
     if lang in stopwords.fileids():
-        for text in docs:
-            tokens = word_tokenize(text)
-            tokens = [word for word in tokens if not word in stopwords.words(lang)]
-            text = ' '.join(tokens)
+        sp = WhiteSpacePreprocessing(docs, stopwords_language=lang)
+    else:
+        sp = WhiteSpacePreprocessingStopwords(docs)
+    return sp
 
-    return docs
-
-
-def data_preparation(text_for_bow, text_for_contextual):
+def data_preparation(text_for_bow):
     vectorizer = CountVectorizer()  # from sklearn
 
     train_bow_embeddings = vectorizer.fit_transform(text_for_bow)
@@ -43,18 +42,19 @@ def data_preparation(text_for_bow, text_for_contextual):
 
 
 def topic_modeling(contextualized_embeddings, bow_embeddings, vocab, id2token):
-    qt = TopicModelDataPreparation()
-
     training_dataset = qt.load(contextualized_embeddings, bow_embeddings, id2token)
-    ctm = CombinedTM(bow_size=len(vocab), contextual_size=len(contextualized_embeddings), n_components=5)
+    ctm = ZeroShotTM(bow_size=len(vocab), contextual_size=len(vocab), n_components=50, num_epochs=20)
     ctm.fit(training_dataset)  # run the model
-    ctm.get_topics()
+    ctm.get_topics(5)
 
 
 if __name__ == "__main__":
     reader = JSONLinesReader(CLEANED_PATH + TRAIN_FILE)
+    result = list(tqdm(reader.get_news_data()))
+    train, test = train_test_split(result, test_size=0.3)
     documents = {}
-    for p_id, n1_data, n2_data, scores in tqdm(reader.get_news_data()):
+    train_em = []
+    for p_id, n1_data, n2_data, scores in train:
         #add to a dictionary
         if n2_data.meta_lang == n1_data.meta_lang:
             text = [n1_data.text.strip(), n2_data.text.strip()]
@@ -62,42 +62,46 @@ if __name__ == "__main__":
         else:
             document_creation([n1_data.text.strip()], n1_data.meta_lang)
             document_creation([n2_data.text.strip()], n2_data.meta_lang)
+        #store contextualized embeddings
+        p_id1, p_id2 = p_id.split("_")
+        try:
+            train_em.append(EmbeddingStore(EMBEDDING_DATA_PATH).read(p_id1))
+            train_em.append(EmbeddingStore(EMBEDDING_DATA_PATH).read(p_id2))
+        except:
+            print("FileNotFoundError")
 
     #clean texts
     for key in documents:
         #convert language codes for nltk stopwords
-        lang = pycountry.languages.get(alpha2=key)
-        lang = lang.name.lower()
-
+        lang = pycountry.languages.get(alpha_2=key)
+        if lang != None:
+            lang = lang.name.lower()
+        else:
+            lang = key
         #clean documents from stopwords
         documents[key] = document_cleaning(documents[key], lang)
 
-        #create needed elements
-        preprocessed_documents, unpreprocessed_corpus, vocab = documents[key].preprocess()
-        bow_embeddings, vocab, id2token = data_preparation(preprocessed_documents, unpreprocessed_corpus)
-        contextualized_embeddings = EmbeddingStore(EMBEDDING_DATA_PATH+EMBEDDING_MODEL_TYPE).read()
-        topic_modeling(contextualized_embeddings, bow_embeddings, vocab, id2token)
-"""
-en_test= ["On this year Nadal has won several competing prizes, most of them against the famous award-winning sportman Djokovic",]
-de_test= ["In diesem Jahr hat Nadal mehrere Wettbewerbe gewonnen, die meisten davon gegen den berühmten, preisgekrönten Sportler Djokovic",]
-#documents = [line.strip() for line in open(text_file, encoding="utf-8").readlines()]
-documents = [line.strip() for line in en_test]
-sp = WhiteSpacePreprocessing(documents, stopwords_language='english')
-preprocessed_documents, unpreprocessed_corpus, vocab = sp.preprocess()
-#DONE
+    #create needed elements
+    preprocessed_documents, unpreprocessed_corpus, vocab = documents["en"].preprocess()
+    for key in documents:
+        if key != "en":
+            pd, uc, v = documents[key].preprocess()
+            preprocessed_documents += pd
+            unpreprocessed_corpus += uc
+            vocab += v
 
-# since we are doing multilingual topic modeling, we do not need the BoW in
-# ZeroShotTM when doing cross-lingual experiments (it does not make sense, since we trained with an english Bow
-# to use the spanish BoW)
-tp = TopicModelDataPreparation("paraphrase-multilingual-mpnet-base-v2")
-training_dataset = tp.fit(text_for_contextual=unpreprocessed_corpus, text_for_bow=preprocessed_documents)
+    bow_embeddings, vocab, id2token = data_preparation(preprocessed_documents)
+    qt = TopicModelDataPreparation()
+    topic_modeling(train_em, bow_embeddings, vocab, id2token)
 
-ctm = ZeroShotTM(bow_size=len(tp.vocab), contextual_size=768, n_components=5, num_epochs=20)
-ctm.fit(training_dataset)
-ctm.get_topic_lists(5)
-
-#testing_dataset = qt.transform(testing_text_for_contextual)
-
-# n_sample how many times to sample the distribution (see the doc)
-#ctm.get_doc_topic_distribution(testing_dataset, n_samples=20) # returns a (n_documents, n_topics) matrix with the topic distribution of each document
-"""
+    #try with testing dataset
+    test_em = []
+    for p_id, _, _, _ in tqdm(test):
+        p_id1, p_id2 = p_id.split("_")
+        try:
+            test_em.append(EmbeddingStore(EMBEDDING_DATA_PATH + EMBEDDING_MODEL_TYPE).read(p_id1))
+            test_em.append(EmbeddingStore(EMBEDDING_DATA_PATH + EMBEDDING_MODEL_TYPE).read(p_id2))
+        except:
+            print("FileNotFoundError")
+    testing_dataset = qt.load(test_em)
+    ctm.get_doc_topic_distribution(testing_dataset, n_samples=20)
