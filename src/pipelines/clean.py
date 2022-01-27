@@ -4,6 +4,9 @@ Data Cleaning and Filtering pipeline.
 Functionalities:
     1. Filter empty text pairs
     2. Remove copyright text
+    3. Remove urls
+    4. Remove cookies warning and images copyright
+    5. Remove stopwords
 """
 
 import argparse
@@ -11,14 +14,20 @@ import jsonlines
 import re
 
 from pathlib import Path
+
+from nltk import word_tokenize
 from tqdm import tqdm
+from nltk.corpus import stopwords
+import pycountry
 
 from src.config import DATA_FILE, UNCLEANED_PATH, CLEANED_PATH, DataType, RAW_FILE
 from src.data import JSONLinesReader
 from src.logger import log
 
 COPYRIGHT_PATTERN = re.compile(r"(\.\s|\n)Copyright[^$]*")
-
+URL_PATTERN = re.compile(r"\(?https?:\/\/[^\s\)\）。]*")
+COOKIES_PATTERN = re.compile(r"\.[\s\w][^\.\“]*[^,]\s[Cc]ookies([^$](?![a-z][A-Z]))*")
+IMAGES_PATTERN = re.compile(r"(\((Image:|Photo by)[^\)]*\))")
 
 def write_to_jsonl(w, pair_id, n1, n2, s):
     if s:
@@ -34,10 +43,31 @@ def write_to_jsonl(w, pair_id, n1, n2, s):
     w.write(d_row)
 
 
-def remove_copyright(text):
-    result = COPYRIGHT_PATTERN.search(text, 1)
+def remove_pattern(text, pattern):
+    result = pattern.search(text, 1)
     if result:
-        text = re.sub(COPYRIGHT_PATTERN, "", text)
+        text = re.sub(pattern, "", text)
+    return text
+
+def remove_cookies(text):
+    result = COOKIES_PATTERN.search(text, 1)
+    if result and len(result.group(0)) < 1500:
+        pattern = re.compile(r"Chrome")
+        r = pattern.search(result.group(0), 1)
+        if not r:
+            text = re.sub(COOKIES_PATTERN, "", text)
+    return text
+
+def remove_stopwords(text, lang):
+    #convert language code to nltk
+    if len(lang) > 0:
+        lang = pycountry.languages.get(alpha_2=lang)
+        lang = lang.name.lower()
+
+    if lang in stopwords.fileids():
+        tokens = word_tokenize(text)
+        tokens = [word for word in tokens if not word in stopwords.words(lang)]
+        text = ' '.join(tokens)
     return text
 
 
@@ -64,7 +94,15 @@ if __name__ == "__main__":
         if len_1 <= 1 or len_2 <= 1:
             log.error(f"pair {p_id} doesn't have enough news content.")
             continue
-        n1_data.text = remove_copyright(n1_data.text).strip().replace("\n", "")
-        n2_data.text = remove_copyright(n2_data.text).strip().replace("\n", "")
+        n1_data.text = remove_pattern(n1_data.text, COPYRIGHT_PATTERN).strip().replace("\n", "")
+        n2_data.text = remove_pattern(n2_data.text, COPYRIGHT_PATTERN).strip().replace("\n", "")
+        n1_data.text = remove_pattern(n1_data.text, URL_PATTERN).strip().replace("\n", "")
+        n2_data.text = remove_pattern(n2_data.text, URL_PATTERN).strip().replace("\n", "")
+        n1_data.text = remove_cookies(n1_data.text).strip().replace("\n", "")
+        n2_data.text = remove_cookies(n2_data.text).strip().replace("\n", "")
+        n1_data.text = remove_pattern(n1_data.text, IMAGES_PATTERN).strip().replace("\n", "")
+        n2_data.text = remove_pattern(n2_data.text, IMAGES_PATTERN).strip().replace("\n", "")
+        n1_data.text = remove_stopwords(n1_data.text, n1_data.meta_lang)
+        n2_data.text = remove_stopwords(n2_data.text, n2_data.meta_lang)
         write_to_jsonl(writer, p_id, n1_data, n2_data, scores)
     writer.close()
