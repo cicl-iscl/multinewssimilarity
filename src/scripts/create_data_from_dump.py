@@ -47,7 +47,7 @@ if __name__ == "__main__":
         n1_path, n2_path = id_to_json_path(pair_id)
         n1_reader, n2_reader = JSONReader(n1_path, News), JSONReader(n2_path, News)
 
-        if n1_reader.data and n2_reader.data and args.data_type == 'train':
+        if n1_reader.data and n2_reader.data and args.data_type.name == 'train':
             d_row = {'pair_id': pair_id,
                      'n1_data': n1_reader.data.__dict__,
                      'n2_data': n2_reader.data.__dict__,
@@ -60,7 +60,7 @@ if __name__ == "__main__":
                                 'tone': row[FIELD_TO_INDEX_MAP['Tone']]}
                      }
             write_to_jsonl(writer, d_row)
-        elif n1_reader.data and n2_reader.data and args.data_type == 'test':
+        elif n1_reader.data and n2_reader.data and args.data_type.name == 'test':
             d_row = {'pair_id': pair_id,
                      'n1_data': n1_reader.data.__dict__,
                      'n2_data': n2_reader.data.__dict__,
@@ -71,7 +71,7 @@ if __name__ == "__main__":
             log.error(f"Data doesn't exist for pair {pair_id}")
             empty_pairs.append(pair_id)
         processed += 1
-        # t.update(processed)
+        t.update(processed)
     writer.close()
     print("Processed pairs: {}".format(processed))
     print("#Empty Pairs: {}".format(len(empty_pairs)))

@@ -13,6 +13,9 @@ logs/
 
 # data
 data_dump/
+results/
+wandb/
+models/
 *.tsv
 *.pdf
 EStore/

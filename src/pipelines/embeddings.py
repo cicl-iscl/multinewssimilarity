@@ -3,7 +3,6 @@ Pipeline to create & store embeddings to disk.
 """
 import argparse
 
-
 from pathlib import Path
 from sentence_transformers import SentenceTransformer
 from spacy import load
@@ -42,7 +41,7 @@ def compute_and_store_embeddings(reader: JSONLinesReader,
 
     embedding_types = [type for type in EmbeddingType if type != EmbeddingType.all] if embedding_type == EmbeddingType.all else [embedding_type]
     spacy_tokenizer = lambda data: nlp(data, disable=["tok2vec", "tagger", "parser", "attribute_ruler", "lemmatizer"])
-    # hf_tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/"+model_name.value)
+    hf_tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/"+model_name.value)
     model = SentenceTransformer(model_name.value)
 
     for p_id, n1_obj, n2_obj, scores in tqdm(reader.get_news_data()):
@@ -73,6 +72,11 @@ def compute_and_store_embeddings(reader: JSONLinesReader,
             elif e_t == EmbeddingType.start_para:
                 n1_data = [" ".join(n1_obj.text.strip().split())]
                 n2_data = [" ".join(n2_obj.text.strip().split())]
+            elif e_t == EmbeddingType.end_para:
+                n1_tokens = hf_tokenizer.tokenize(n1_obj.text.strip())
+                n2_tokens = hf_tokenizer.tokenize(n2_obj.text.strip())
+                n1_data = [hf_tokenizer.convert_tokens_to_string(n1_tokens[-512:])]
+                n2_data = [hf_tokenizer.convert_tokens_to_string(n2_tokens[-512:])]
             else:
                 continue
 

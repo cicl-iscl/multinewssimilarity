@@ -2,13 +2,28 @@ import jsonlines
 import re
 
 from matplotlib.pyplot import hist, show
-from src.config import CLEANED_PATH, TRAIN_FILE
+from src.config import CLEANED_PATH, DATA_FILE, DataType, UNCLEANED_PATH, RAW_FILE
+from src.data import CSVReader
+
+
+def print_pair_stats(fpath):
+    r = CSVReader(fpath)
+    r.df['pair_lang'] = r.df[['url1_lang', 'url2_lang']].agg('-'.join, axis=1)
+    print(r.df['pair_lang'].value_counts())
+
 
 if __name__ == '__main__':
     overall_score = []
     article_len = []
+    lang_pair = []
 
-    with open(CLEANED_PATH+TRAIN_FILE, 'r') as fp:
+    test_csv = UNCLEANED_PATH.format(data_type=DataType.test.name) + RAW_FILE.format(data_type=DataType.test.name)
+    train_csv = UNCLEANED_PATH.format(data_type=DataType.train.name) + RAW_FILE.format(data_type=DataType.train.name)
+
+    print_pair_stats(test_csv)
+    print_pair_stats(train_csv)
+
+    with open(CLEANED_PATH.format(data_type=DataType.train.name)+DATA_FILE.format(data_type=DataType.train.name), 'r') as fp:
         reader = jsonlines.Reader(fp)
         data = reader.iter()
         min_sent_len = 100
