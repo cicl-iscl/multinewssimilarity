@@ -4,6 +4,9 @@ Data Cleaning and Filtering pipeline.
 Functionalities:
     1. Filter empty text pairs
     2. Remove copyright text
+    3. Remove urls
+    4. Remove cookies warning and images copyright
+    5. Remove stopwords
 """
 
 import argparse
@@ -14,7 +17,11 @@ import re
 from nltk import word_tokenize
 from nltk.corpus import stopwords
 from pathlib import Path
+
+from nltk import word_tokenize
 from tqdm import tqdm
+from nltk.corpus import stopwords
+import pycountry
 
 from src.config import DATA_FILE, UNCLEANED_PATH, CLEANED_PATH, DataType
 from src.data import JSONLinesReader
