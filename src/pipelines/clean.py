@@ -18,10 +18,7 @@ from nltk import word_tokenize
 from nltk.corpus import stopwords
 from pathlib import Path
 
-from nltk import word_tokenize
 from tqdm import tqdm
-from nltk.corpus import stopwords
-import pycountry
 
 from src.config import DATA_FILE, UNCLEANED_PATH, CLEANED_PATH, DataType
 from src.data import JSONLinesReader
